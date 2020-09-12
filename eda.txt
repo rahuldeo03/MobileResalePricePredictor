@@ -1,0 +1,46 @@
+import numpy as np
+import pandas as pd
+import logging
+
+logger = logging.getLogger(__name__)
+logger.debug('some debug message')
+
+df = pd.read_csv(r'C:\Users\rahul03\SpyderProjects\MobileResalePricePredictor\gsm.csv')
+dfselected = df.loc[ : , ['launch_announced', 'display_type','display_size','memory_internal', 'main_camera_single',\
+                          'main_camera_dual','battery', 'platform_os', 'platform_chipset', 'platform_cpu', 'misc_price'] ]
+dftest1 = dfselected
+dftest1 = dftest1.replace(np.nan, '', regex=True)
+dftest1['camera'] = dftest1['main_camera_single'].astype(str) + dftest1['main_camera_dual'].astype(str)
+dfselected.append(dftest1['camera'])
+dfselected = dfselected.drop(['main_camera_single', 'main_camera_dual'], axis=1)
+dfselected['launch_announced'] = dfselected['launch_announced'].str[:4]
+dfselected['display_size'] = dfselected['display_size'].str[:3]
+dfselected["battery"] = dfselected["battery"].str.extract("(\d*\.?\d+)", expand=True)
+dfselected['display_type'] = dfselected['display_type'].str.split(' ').str[0]
+dfselected['misc_price'] = np.where(dfselected['misc_price'].str.contains('<89>'), dfselected['misc_price'].str.split('>').str[-1:], dfselected['misc_price'])
+dfselected['misc_price'] = dfselected['misc_price'].astype(str)
+dfselected['misc_price'] = dfselected['misc_price'].str.replace('About ', '')
+price = dfselected["misc_price"].str.split(" ", n = 1, expand = True)  
+dfselected["Price"]= price[0]  
+dfselected["Currency"]= price[1] 
+dfselected["Price"] = dfselected["Price"].str.extract("(\d*\.?\d+)", expand=True)
+replace_values = {'EUR' : 87, 'INR' : 1, 'USD' : 73, '' : 73}                                                                                          
+dfselected = dfselected.replace({"Currency": replace_values})
+dfselected['Currency'] = dfselected['Currency'].fillna(73)
+dfselected.head(5)
+dfselected['Cost'] = dfselected["Price"].astype(float)*dfselected['Currency'].astype(float)
+dfselected = dfselected.drop(['misc_price', 'Price', 'Currency'], axis=1)
+dfselected.head(5)
+dfselected['platform_os'] = dfselected.platform_os.astype('category').cat.codes
+dfselected['platform_chipset'] = dfselected.platform_chipset.astype('category').cat.codes
+dfselected.head(5)
+dfselected['platform_cpu'] = dfselected.platform_cpu.astype('category').cat.codes
+dfselected.head(5)
+import matplotlib.pyplot as plt
+import seaborn as sns
+plt.figure(figsize= (20, 10))
+sns.heatmap(dfcleaned.corr())
+sns.pairplot(dfcleaned)
+plt.boxplot(dfcleaned['battery'].astype(float)) 
+plt.show() 
+dfcleaned.corr()
